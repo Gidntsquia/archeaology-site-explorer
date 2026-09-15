@@ -1,7 +1,7 @@
 # Archaeology Site Explorer 🏛️
 
 <p align="center">
-  <img alt="Inside House 2 at Skara Brae, rendered from the fly-through view" src="docs/skara-brae-hero.png">
+  <img alt="Flying through House 2 at Skara Brae in the browser app" src="docs/skara-brae-hero.gif">
 </p>
 
 A browser app for flying freely around real archaeological sites in 3D. Sites are built
