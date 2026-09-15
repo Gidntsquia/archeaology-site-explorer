@@ -13,6 +13,12 @@ const hotspotClose = document.getElementById('hotspot-close');
 const contextLostEl = document.getElementById('context-lost');
 const gestureOverlay = document.getElementById('gesture-overlay');
 const gestureDismiss = document.getElementById('gesture-dismiss');
+const mpRoom = document.getElementById('mp-room');
+const mpPeers = document.getElementById('mp-peers');
+const mpInvite = document.getElementById('mp-invite');
+const namePrompt = document.getElementById('name-prompt');
+const nameInput = document.getElementById('name-input');
+const nameSubmit = document.getElementById('name-submit');
 
 export function showPicker() {
   picker.hidden = false;
@@ -89,6 +95,72 @@ if (gestureDismiss) {
       // ignore
     }
   });
+}
+
+const NAME_KEY = 'player-name';
+
+export function getSavedName() {
+  try {
+    return localStorage.getItem(NAME_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function saveName(name) {
+  try {
+    localStorage.setItem(NAME_KEY, name);
+  } catch {
+    // ignore
+  }
+}
+
+export function promptForName() {
+  const saved = getSavedName();
+  if (saved) return Promise.resolve(saved);
+
+  return new Promise((resolve) => {
+    namePrompt.hidden = false;
+    nameInput.focus();
+    const submit = () => {
+      const name = (nameInput.value || 'Explorer').trim().slice(0, 20) || 'Explorer';
+      saveName(name);
+      namePrompt.hidden = true;
+      nameSubmit.removeEventListener('click', submit);
+      nameInput.removeEventListener('keydown', onKeydown);
+      resolve(name);
+    };
+    const onKeydown = (e) => {
+      if (e.key === 'Enter') submit();
+    };
+    nameSubmit.addEventListener('click', submit);
+    nameInput.addEventListener('keydown', onKeydown);
+  });
+}
+
+export function setRoomInfo(room) {
+  mpRoom.textContent = `Room: ${room}`;
+}
+
+export function setPeerCount(count) {
+  mpPeers.textContent = count === 1 ? '1 other here' : `${count} others here`;
+}
+
+export function onInviteClick(cb) {
+  mpInvite.addEventListener('click', cb);
+}
+
+export async function copyInviteLink() {
+  try {
+    await navigator.clipboard.writeText(location.href);
+    const original = mpInvite.textContent;
+    mpInvite.textContent = 'Copied!';
+    setTimeout(() => {
+      mpInvite.textContent = original;
+    }, 1500);
+  } catch {
+    // clipboard unavailable; ignore
+  }
 }
 
 export function showContextLost() {

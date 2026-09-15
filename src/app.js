@@ -3,6 +3,8 @@ import { FlyControls } from './controls.js';
 import { TouchControls } from './touchControls.js';
 import { buildSplatSite } from './splatSite.js';
 import { buildMeshSite } from './meshSite.js';
+import * as net from './net.js';
+import { createAvatarManager } from './avatars.js';
 import testSplatConfig from './sites/test-splat.json' with { type: 'json' };
 import skaraBraeConfig from './sites/skara-brae.json' with { type: 'json' };
 import * as ui from './ui.js';
@@ -30,6 +32,18 @@ let controls = null;
 let currentSite = null;
 let siteHotspots = [];
 let activeSiteId = null;
+let avatars = null;
+
+function getOrCreateRoomCode() {
+  const params = new URLSearchParams(location.search);
+  let room = params.get('room');
+  if (!room) {
+    room = Math.random().toString(36).slice(2, 8);
+    params.set('room', room);
+    history.replaceState(null, '', `${location.pathname}?${params}`);
+  }
+  return room;
+}
 
 function getViewportWidth() {
   return window.visualViewport ? window.visualViewport.width : window.innerWidth;
@@ -77,7 +91,29 @@ ui.onBack(() => {
   currentSite = null;
   controls.enabled = false;
   document.exitPointerLock?.();
+  net.leave();
+  if (avatars) avatars.dispose();
+  avatars = null;
+  knownPeers.clear();
   ui.showPicker();
+});
+
+ui.onInviteClick(() => ui.copyInviteLink());
+
+const knownPeers = new Set();
+
+net.on('peer-join', (peer) => {
+  if (avatars) avatars.addPeer(peer.id, peer.name, peer.p, peer.q);
+  knownPeers.add(peer.id);
+  ui.setPeerCount(knownPeers.size);
+});
+net.on('pose', (msg) => {
+  if (avatars) avatars.updatePose(msg.id, msg.p, msg.q);
+});
+net.on('peer-leave', (msg) => {
+  if (avatars) avatars.removePeer(msg.id);
+  knownPeers.delete(msg.id);
+  ui.setPeerCount(knownPeers.size);
 });
 
 async function loadSite(siteId) {
@@ -116,6 +152,13 @@ async function loadSite(siteId) {
   siteHotspots = (site.config.hotspots || []).map((h) => ({ ...h, vec: new THREE.Vector3(...h.position) }));
   ui.setLocationName(site.config.name);
   ui.setLoading(1);
+
+  avatars = createAvatarManager(scene);
+  const room = getOrCreateRoomCode();
+  ui.setRoomInfo(room);
+  ui.setPeerCount(0);
+  const name = await ui.promptForName();
+  net.join(siteId, room, name);
 }
 
 const clock = new THREE.Clock();
@@ -141,6 +184,8 @@ function animate() {
     controls.update(dt);
     if (currentSite) currentSite.clampToBounds(camera.position, dt);
     updateHotspotProximity();
+    net.sendPose(camera);
+    if (avatars) avatars.update();
     renderer.render(scene, camera);
   }
 
