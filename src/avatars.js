@@ -4,13 +4,13 @@ const INTERP_DELAY = 100; // ms, render this far behind the newest sample
 
 // z = arm swing out from body, x = forward/up swing (positive = up and forward, since
 // rotating +x moves the hanging arm toward -z/+y, i.e. up in front of the avatar).
-const WAVE_UP_TO = [0.9, 2.6];
+const WAVE_UP_TO = [2.5, 1.2];
 const EMOTE_CONFIG = {
   wave: {
     upDuration: 150,
     upTo: WAVE_UP_TO,
     cyclePeriod: 450, // ms for one full up -> dip -> up wave cycle
-    dipDelta: 0.35, // ~20deg dip on the x (forward/up) rotation
+    dipDelta: 0.6, // dip on the z (side-lift) rotation, more pronounced
     downDuration: 220,
   },
   raise: {
@@ -164,8 +164,8 @@ function updateEmoteState(state, rightArm, baseArmRotationZ, now) {
       // Triangle wave: max -> dip -> max over one cyclePeriod.
       const local = (elapsed % cfg.cyclePeriod) / cfg.cyclePeriod;
       const t = local <= 0.5 ? local * 2 : (1 - local) * 2;
-      rightArm.rotation.z = cfg.upTo[0];
-      rightArm.rotation.x = cfg.upTo[1] - cfg.dipDelta * t;
+      rightArm.rotation.z = cfg.upTo[0] - cfg.dipDelta * t;
+      rightArm.rotation.x = cfg.upTo[1];
       if (elapsed >= cfg.cyclePeriod) {
         state.phaseStart = now;
         if (state.pendingRelease) beginDown(state, now);
