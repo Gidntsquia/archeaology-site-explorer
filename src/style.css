@@ -75,7 +75,10 @@ body.is-touch .vert-btn, body.is-touch .gyro-btn { display: block; }
   bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px));
   pointer-events: all; min-height: 44px; padding: 0.4rem 0.9rem; font: inherit; font-size: 0.85rem;
   background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #eee; border-radius: 20px;
-  cursor: pointer;
+  cursor: pointer; transition: background 0.15s, transform 0.15s, border-color 0.15s;
+}
+.wave-btn.active {
+  background: rgba(217,162,74,0.45); border-color: #d9a24a; transform: scale(1.08);
 }
 
 .context-lost {

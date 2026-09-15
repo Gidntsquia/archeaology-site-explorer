@@ -168,6 +168,14 @@ export function onWaveClick(cb) {
   if (waveBtn) waveBtn.addEventListener('click', cb);
 }
 
+let waveFlashTimer = null;
+export function flashWaveBtn() {
+  if (!waveBtn) return;
+  waveBtn.classList.add('active');
+  clearTimeout(waveFlashTimer);
+  waveFlashTimer = setTimeout(() => waveBtn.classList.remove('active'), 300);
+}
+
 export function showContextLost() {
   if (contextLostEl) contextLostEl.hidden = false;
 }

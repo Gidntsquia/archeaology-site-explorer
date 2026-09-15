@@ -107,7 +107,10 @@ function samePose(a, b, eps = 1e-4) {
 }
 
 export function sendEmote(emoteType) {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    console.warn('sendEmote: not connected, emote not sent');
+    return;
+  }
   ws.send(JSON.stringify({ t: 'emote', emoteType }));
 }
 

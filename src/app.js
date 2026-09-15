@@ -121,6 +121,7 @@ net.on('emote', (msg) => {
 
 function sendWave() {
   if (!activeSiteId) return;
+  ui.flashWaveBtn();
   net.sendEmote('wave');
 }
 document.addEventListener('keydown', (e) => {
