@@ -4,7 +4,7 @@ const INTERP_DELAY = 100; // ms, render this far behind the newest sample
 
 // z = arm swing out from body, x = forward/up swing (positive = up and forward, since
 // rotating +x moves the hanging arm toward -z/+y, i.e. up in front of the avatar).
-const WAVE_UP_TO = [2.5, 1.2];
+const WAVE_UP_TO = [2.2, 0];
 const EMOTE_CONFIG = {
   wave: {
     upDuration: 150,
