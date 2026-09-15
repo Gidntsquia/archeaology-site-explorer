@@ -4,10 +4,30 @@ import { WebSocketServer } from 'ws';
 const PORT = process.env.PORT || 8787;
 const PING_INTERVAL = 20000;
 
-// room key -> { site, peers: Map<id, { ws, name, p, q }> }
+// room key -> { site, peers: Map<id, { ws, name, color, p, q }> }
 const rooms = new Map();
 
 let nextId = 1;
+
+const AVATAR_COLORS = [
+  0xe74c3c, // red
+  0x3498db, // blue
+  0x2ecc71, // green
+  0xf1c40f, // yellow
+  0x9b59b6, // purple
+  0xe67e22, // orange
+  0x1abc9c, // teal
+  0xe84393, // pink
+  0xf39c12, // amber
+  0x00cec9, // cyan
+];
+
+function pickColor(room) {
+  const used = new Set([...room.peers.values()].map((p) => p.color));
+  const unused = AVATAR_COLORS.filter((c) => !used.has(c));
+  if (unused.length > 0) return unused[Math.floor(Math.random() * unused.length)];
+  return AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
+}
 
 const httpServer = createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -56,13 +76,14 @@ wss.on('connection', (ws) => {
 
       room = target;
       const name = String(msg.name || 'anon').slice(0, 40);
-      room.peers.set(id, { ws, name, p: null, q: null });
+      const color = pickColor(target);
+      room.peers.set(id, { ws, name, color, p: null, q: null });
 
       const peers = [...room.peers.entries()]
         .filter(([peerId]) => peerId !== id)
-        .map(([peerId, peer]) => ({ id: peerId, name: peer.name, p: peer.p, q: peer.q }));
+        .map(([peerId, peer]) => ({ id: peerId, name: peer.name, color: peer.color, p: peer.p, q: peer.q }));
       send(ws, { t: 'welcome', id, peers });
-      broadcast(room, { t: 'peer-join', id, name }, id);
+      broadcast(room, { t: 'peer-join', id, name, color }, id);
       return;
     }
 
@@ -74,6 +95,11 @@ wss.on('connection', (ws) => {
       peer.p = msg.p;
       peer.q = msg.q;
       broadcast(room, { t: 'pose', id, p: msg.p, q: msg.q, ts: Date.now() }, id);
+    }
+
+    if (msg.t === 'emote') {
+      const type = String(msg.emoteType || 'wave').slice(0, 20);
+      broadcast(room, { t: 'emote', id, emoteType: type }, id);
     }
   });
 

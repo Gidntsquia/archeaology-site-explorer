@@ -16,6 +16,7 @@ const gestureDismiss = document.getElementById('gesture-dismiss');
 const mpRoom = document.getElementById('mp-room');
 const mpPeers = document.getElementById('mp-peers');
 const mpInvite = document.getElementById('mp-invite');
+const waveBtn = document.getElementById('wave-btn');
 const namePrompt = document.getElementById('name-prompt');
 const nameInput = document.getElementById('name-input');
 const nameSubmit = document.getElementById('name-submit');
@@ -161,6 +162,10 @@ export async function copyInviteLink() {
   } catch {
     // clipboard unavailable; ignore
   }
+}
+
+export function onWaveClick(cb) {
+  if (waveBtn) waveBtn.addEventListener('click', cb);
 }
 
 export function showContextLost() {

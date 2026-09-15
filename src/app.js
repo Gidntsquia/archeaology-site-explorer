@@ -103,7 +103,7 @@ ui.onInviteClick(() => ui.copyInviteLink());
 const knownPeers = new Set();
 
 net.on('peer-join', (peer) => {
-  if (avatars) avatars.addPeer(peer.id, peer.name, peer.p, peer.q);
+  if (avatars) avatars.addPeer(peer.id, peer.name, peer.p, peer.q, peer.color);
   knownPeers.add(peer.id);
   ui.setPeerCount(knownPeers.size);
 });
@@ -115,6 +115,18 @@ net.on('peer-leave', (msg) => {
   knownPeers.delete(msg.id);
   ui.setPeerCount(knownPeers.size);
 });
+net.on('emote', (msg) => {
+  if (avatars) avatars.triggerEmote(msg.id, msg.emoteType);
+});
+
+function sendWave() {
+  if (!activeSiteId) return;
+  net.sendEmote('wave');
+}
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyF' && !e.repeat) sendWave();
+});
+ui.onWaveClick(sendWave);
 
 async function loadSite(siteId) {
   const site = SITES[siteId];

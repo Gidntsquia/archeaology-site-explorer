@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 const INTERP_DELAY = 100; // ms, render this far behind the newest sample
+const WAVE_DURATION = 1400; // ms
 
 function makeNameSprite(name) {
   const canvas = document.createElement('canvas');
@@ -19,44 +20,78 @@ function makeNameSprite(name) {
   const material = new THREE.SpriteMaterial({ map: texture, depthTest: false });
   const sprite = new THREE.Sprite(material);
   sprite.scale.set(1.4, 0.35, 1);
-  sprite.position.set(0, 0.9, 0);
+  sprite.position.set(0, 0.95, 0);
   return sprite;
 }
 
-function makeAvatarGroup(name) {
+function makeGhostBody(color) {
   const group = new THREE.Group();
+  const material = new THREE.MeshStandardMaterial({
+    color,
+    transparent: true,
+    opacity: 0.8,
+    emissive: color,
+    emissiveIntensity: 0.15,
+  });
 
-  const body = new THREE.Mesh(
-    new THREE.CapsuleGeometry(0.18, 0.5, 4, 8),
-    new THREE.MeshStandardMaterial({ color: 0x4fa3ff }),
-  );
-  group.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 12), material);
+  head.position.set(0, 0.18, 0);
+  group.add(head);
 
-  const facing = new THREE.Mesh(
-    new THREE.ConeGeometry(0.08, 0.25, 8),
-    new THREE.MeshStandardMaterial({ color: 0xffcc55 }),
-  );
-  facing.rotation.x = Math.PI / 2;
-  facing.position.set(0, 0, -0.3);
-  group.add(facing);
+  const skirt = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.45, 12, 1, true), material);
+  skirt.position.set(0, -0.15, 0);
+  group.add(skirt);
 
-  group.add(makeNameSprite(name));
+  const eyeMaterial = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  const eyeGeometry = new THREE.SphereGeometry(0.03, 8, 8);
+  const eyeL = new THREE.Mesh(eyeGeometry, eyeMaterial);
+  eyeL.position.set(-0.08, 0.18, -0.19);
+  group.add(eyeL);
+  const eyeR = new THREE.Mesh(eyeGeometry, eyeMaterial);
+  eyeR.position.set(0.08, 0.18, -0.19);
+  group.add(eyeR);
 
   return group;
 }
 
-export function createAvatarManager(scene) {
-  const peers = new Map(); // id -> { group, samples: [{t, p, q}] }
+function makeArm(color, side) {
+  const arm = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.035, 0.22, 4, 8),
+    new THREE.MeshStandardMaterial({ color, transparent: true, opacity: 0.8 }),
+  );
+  const pivot = new THREE.Group();
+  pivot.position.set(side * 0.2, 0.15, 0);
+  arm.position.set(0, -0.11, 0);
+  pivot.add(arm);
+  pivot.rotation.z = side * 0.3;
+  return pivot;
+}
 
-  function addPeer(id, name, p, q) {
+function makeAvatarGroup(name, color) {
+  const group = new THREE.Group();
+  group.add(makeGhostBody(color));
+
+  const rightArm = makeArm(color, 1);
+  group.add(rightArm);
+
+  group.add(makeNameSprite(name));
+
+  return { group, rightArm, baseArmRotationZ: rightArm.rotation.z };
+}
+
+export function createAvatarManager(scene) {
+  const peers = new Map(); // id -> { group, rightArm, baseArmRotationZ, samples, waveStart }
+
+  function addPeer(id, name, p, q, color) {
     if (peers.has(id)) return;
-    const group = makeAvatarGroup(name || 'anon');
+    const avatarColor = color ?? randomColor();
+    const { group, rightArm, baseArmRotationZ } = makeAvatarGroup(name || 'anon', avatarColor);
     if (p) group.position.set(...p);
     if (q) group.quaternion.set(...q);
     scene.add(group);
     const now = performance.now();
     const initialSample = { t: now, p: p || [0, 0, 0], q: q || [0, 0, 0, 1] };
-    peers.set(id, { group, samples: [initialSample, initialSample] });
+    peers.set(id, { group, rightArm, baseArmRotationZ, samples: [initialSample, initialSample], waveStart: null });
   }
 
   function updatePose(id, p, q) {
@@ -64,6 +99,13 @@ export function createAvatarManager(scene) {
     if (!peer) return;
     peer.samples.push({ t: performance.now(), p, q });
     if (peer.samples.length > 2) peer.samples.shift();
+  }
+
+  function triggerEmote(id, type) {
+    if (type !== 'wave') return;
+    const peer = peers.get(id);
+    if (!peer) return;
+    peer.waveStart = performance.now();
   }
 
   function removePeer(id) {
@@ -75,7 +117,8 @@ export function createAvatarManager(scene) {
   }
 
   function update() {
-    const renderTime = performance.now() - INTERP_DELAY;
+    const now = performance.now();
+    const renderTime = now - INTERP_DELAY;
     for (const peer of peers.values()) {
       const [a, b] = peer.samples;
       let t = 0;
@@ -90,6 +133,19 @@ export function createAvatarManager(scene) {
       const qa = new THREE.Quaternion(...a.q);
       const qb = new THREE.Quaternion(...b.q);
       peer.group.quaternion.slerpQuaternions(qa, qb, t);
+
+      if (peer.waveStart !== null) {
+        const elapsed = now - peer.waveStart;
+        if (elapsed > WAVE_DURATION) {
+          peer.waveStart = null;
+          peer.rightArm.rotation.z = peer.baseArmRotationZ;
+          peer.rightArm.rotation.x = 0;
+        } else {
+          const swing = Math.sin((elapsed / 150) * Math.PI) * 0.9;
+          peer.rightArm.rotation.z = Math.PI * 0.6;
+          peer.rightArm.rotation.x = swing;
+        }
+      }
     }
   }
 
@@ -97,7 +153,11 @@ export function createAvatarManager(scene) {
     for (const id of [...peers.keys()]) removePeer(id);
   }
 
-  return { addPeer, updatePose, removePeer, update, dispose };
+  return { addPeer, updatePose, removePeer, triggerEmote, update, dispose };
+}
+
+function randomColor() {
+  return new THREE.Color().setHSL(Math.random(), 0.65, 0.6).getHex();
 }
 
 function lerp(a, b, t) {

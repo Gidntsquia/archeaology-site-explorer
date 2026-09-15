@@ -12,7 +12,7 @@ let closedByUser = false;
 
 let lastSent = { p: null, q: null };
 
-const listeners = { 'peer-join': [], pose: [], 'peer-leave': [], connected: [] };
+const listeners = { 'peer-join': [], pose: [], 'peer-leave': [], connected: [], emote: [] };
 
 export function on(event, cb) {
   listeners[event].push(cb);
@@ -75,6 +75,8 @@ function handleMessage(msg) {
     emit('pose', msg);
   } else if (msg.t === 'peer-leave') {
     emit('peer-leave', msg);
+  } else if (msg.t === 'emote') {
+    emit('emote', msg);
   }
 }
 
@@ -102,6 +104,11 @@ function samePose(a, b, eps = 1e-4) {
     if (Math.abs(a[i] - b[i]) > eps) return false;
   }
   return true;
+}
+
+export function sendEmote(emoteType) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({ t: 'emote', emoteType }));
 }
 
 export function leave() {
