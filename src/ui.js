@@ -165,28 +165,32 @@ export async function copyInviteLink() {
   }
 }
 
-export function onWaveClick(cb) {
-  if (waveBtn) waveBtn.addEventListener('click', cb);
+export function onWaveDown(cb) {
+  if (waveBtn) waveBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); cb(); });
 }
-
-export function onRaiseClick(cb) {
-  if (raiseBtn) raiseBtn.addEventListener('click', cb);
-}
-
-let waveFlashTimer = null;
-export function flashWaveBtn() {
+export function onWaveUp(cb) {
   if (!waveBtn) return;
-  waveBtn.classList.add('active');
-  clearTimeout(waveFlashTimer);
-  waveFlashTimer = setTimeout(() => waveBtn.classList.remove('active'), 300);
+  waveBtn.addEventListener('pointerup', cb);
+  waveBtn.addEventListener('pointerleave', cb);
+  waveBtn.addEventListener('pointercancel', cb);
 }
 
-let raiseFlashTimer = null;
-export function flashRaiseBtn() {
+export function onRaiseDown(cb) {
+  if (raiseBtn) raiseBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); cb(); });
+}
+export function onRaiseUp(cb) {
   if (!raiseBtn) return;
-  raiseBtn.classList.add('active');
-  clearTimeout(raiseFlashTimer);
-  raiseFlashTimer = setTimeout(() => raiseBtn.classList.remove('active'), 300);
+  raiseBtn.addEventListener('pointerup', cb);
+  raiseBtn.addEventListener('pointerleave', cb);
+  raiseBtn.addEventListener('pointercancel', cb);
+}
+
+export function flashWaveBtn(active) {
+  if (waveBtn) waveBtn.classList.toggle('active', active);
+}
+
+export function flashRaiseBtn(active) {
+  if (raiseBtn) raiseBtn.classList.toggle('active', active);
 }
 
 export function showContextLost() {

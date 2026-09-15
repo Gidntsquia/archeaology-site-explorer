@@ -99,7 +99,8 @@ wss.on('connection', (ws) => {
 
     if (msg.t === 'emote') {
       const type = String(msg.emoteType || 'wave').slice(0, 20);
-      broadcast(room, { t: 'emote', id, emoteType: type }, id);
+      const phase = msg.phase === 'stop' ? 'stop' : 'start';
+      broadcast(room, { t: 'emote', id, emoteType: type, phase }, id);
     }
   });
 

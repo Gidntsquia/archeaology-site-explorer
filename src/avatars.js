@@ -2,21 +2,25 @@ import * as THREE from 'three';
 
 const INTERP_DELAY = 100; // ms, render this far behind the newest sample
 
-// Keyframes: [timeMs, rotationZ, rotationX]. z = arm swing out from body, x = forward/back swing.
-const EMOTE_KEYFRAMES = {
-  wave: [
-    [0, 0, 0],
-    [120, Math.PI * 0.6, -1.0], // big sweep up
-    [280, Math.PI * 0.6, -0.35], // wave down
-    [440, Math.PI * 0.6, -1.0], // wave back up
-    [600, 0, 0], // return to standard
-  ],
-  raise: [
-    [0, 0, 0],
-    [200, 0.15, -1.5], // sweep straight up
-    [1000, 0.15, -1.5], // hold
-    [1250, 0, 0], // return to standard
-  ],
+// z = arm swing out from body, x = forward/up swing (positive = up and forward, since
+// rotating +x moves the hanging arm toward -z/+y, i.e. up in front of the avatar).
+const EMOTE_CONFIG = {
+  wave: {
+    upDuration: 120,
+    upTo: [0.9, 2.6],
+    loopPeriod: 160, // ms per half-cycle while held
+    loopFrom: [0.9, 2.6],
+    loopTo: [0.9, 2.25],
+    downDuration: 220,
+  },
+  raise: {
+    upDuration: 200,
+    upTo: [0.15, 2.75],
+    loopPeriod: 0, // static hold while held
+    loopFrom: [0.15, 2.75],
+    loopTo: [0.15, 2.75],
+    downDuration: 250,
+  },
 };
 
 function makeNameSprite(name) {
@@ -101,22 +105,62 @@ function makeAvatarGroup(name, color) {
   return { group, rightArm, baseArmRotationZ: rightArm.rotation.z };
 }
 
-function animateArmFrame(rightArm, baseArmRotationZ, waveStart, emoteType, now) {
-  const keyframes = EMOTE_KEYFRAMES[emoteType];
-  const elapsed = now - waveStart;
-  const duration = keyframes[keyframes.length - 1][0];
-  if (elapsed > duration) {
-    rightArm.rotation.z = baseArmRotationZ;
-    rightArm.rotation.x = 0;
-    return false;
+function newEmoteState() {
+  return { emoteType: null, phase: null, phaseStart: 0, downFromZ: 0, downFromX: 0 };
+}
+
+function startEmote(state, type) {
+  if (!EMOTE_CONFIG[type]) return;
+  state.emoteType = type;
+  state.phase = 'up';
+  state.phaseStart = performance.now();
+}
+
+function releaseEmote(state) {
+  if (!state.emoteType || state.phase === 'down') return;
+  state.phase = 'down';
+  state.phaseStart = performance.now();
+  state.downFromZ = state.currentZ ?? 0;
+  state.downFromX = state.currentX ?? 0;
+}
+
+function updateEmoteState(state, rightArm, baseArmRotationZ, now) {
+  if (!state.emoteType) return false;
+  const cfg = EMOTE_CONFIG[state.emoteType];
+  const elapsed = now - state.phaseStart;
+
+  if (state.phase === 'up') {
+    const t = Math.min(1, elapsed / cfg.upDuration);
+    rightArm.rotation.z = lerp(0, cfg.upTo[0], t);
+    rightArm.rotation.x = lerp(0, cfg.upTo[1], t);
+    if (t >= 1) {
+      state.phase = 'loop';
+      state.phaseStart = now;
+    }
+  } else if (state.phase === 'loop') {
+    if (cfg.loopPeriod > 0) {
+      const cycle = (elapsed % (cfg.loopPeriod * 2)) / cfg.loopPeriod;
+      const t = cycle <= 1 ? cycle : 2 - cycle;
+      rightArm.rotation.z = lerp(cfg.loopFrom[0], cfg.loopTo[0], t);
+      rightArm.rotation.x = lerp(cfg.loopFrom[1], cfg.loopTo[1], t);
+    } else {
+      rightArm.rotation.z = cfg.upTo[0];
+      rightArm.rotation.x = cfg.upTo[1];
+    }
+  } else if (state.phase === 'down') {
+    const t = Math.min(1, elapsed / cfg.downDuration);
+    rightArm.rotation.z = lerp(state.downFromZ, baseArmRotationZ, t);
+    rightArm.rotation.x = lerp(state.downFromX, 0, t);
+    if (t >= 1) {
+      state.emoteType = null;
+      state.phase = null;
+      state.currentZ = null;
+      state.currentX = null;
+      return false;
+    }
   }
-  let i = 0;
-  while (i < keyframes.length - 2 && elapsed > keyframes[i + 1][0]) i++;
-  const [t0, z0, x0] = keyframes[i];
-  const [t1, z1, x1] = keyframes[i + 1];
-  const t = t1 > t0 ? (elapsed - t0) / (t1 - t0) : 1;
-  rightArm.rotation.z = lerp(z0, z1, t);
-  rightArm.rotation.x = lerp(x0, x1, t);
+  state.currentZ = rightArm.rotation.z;
+  state.currentX = rightArm.rotation.x;
   return true;
 }
 
@@ -126,30 +170,25 @@ export function createSelfArm(camera, color = 0xd9a24a) {
   rightArm.scale.setScalar(1.3);
   camera.add(rightArm);
   const baseArmRotationZ = rightArm.rotation.z;
-  let waveStart = null;
-  let emoteType = null;
+  const state = newEmoteState();
 
   function trigger(type) {
-    if (!EMOTE_KEYFRAMES[type]) return;
-    emoteType = type;
-    waveStart = performance.now();
+    startEmote(state, type);
+  }
+
+  function release(type) {
+    if (!type || state.emoteType === type) releaseEmote(state);
   }
 
   function update() {
-    if (waveStart === null) return;
-    const now = performance.now();
-    const active = animateArmFrame(rightArm, baseArmRotationZ, waveStart, emoteType, now);
-    if (!active) {
-      waveStart = null;
-      emoteType = null;
-    }
+    updateEmoteState(state, rightArm, baseArmRotationZ, performance.now());
   }
 
   function dispose() {
     camera.remove(rightArm);
   }
 
-  return { trigger, update, dispose };
+  return { trigger, release, update, dispose };
 }
 
 export function createAvatarManager(scene) {
@@ -164,7 +203,7 @@ export function createAvatarManager(scene) {
     scene.add(group);
     const now = performance.now();
     const initialSample = { t: now, p: p || [0, 0, 0], q: q || [0, 0, 0, 1] };
-    peers.set(id, { group, rightArm, baseArmRotationZ, samples: [initialSample, initialSample], waveStart: null, emoteType: null });
+    peers.set(id, { group, rightArm, baseArmRotationZ, samples: [initialSample, initialSample], emote: newEmoteState() });
   }
 
   function updatePose(id, p, q) {
@@ -174,12 +213,14 @@ export function createAvatarManager(scene) {
     if (peer.samples.length > 2) peer.samples.shift();
   }
 
-  function triggerEmote(id, type) {
-    if (!EMOTE_KEYFRAMES[type]) return;
+  function triggerEmote(id, type, phase = 'start') {
     const peer = peers.get(id);
     if (!peer) return;
-    peer.emoteType = type;
-    peer.waveStart = performance.now();
+    if (phase === 'stop') {
+      releaseEmote(peer.emote);
+    } else {
+      startEmote(peer.emote, type);
+    }
   }
 
   function removePeer(id) {
@@ -208,13 +249,7 @@ export function createAvatarManager(scene) {
       const qb = new THREE.Quaternion(...b.q);
       peer.group.quaternion.slerpQuaternions(qa, qb, t);
 
-      if (peer.waveStart !== null) {
-        const active = animateArmFrame(peer.rightArm, peer.baseArmRotationZ, peer.waveStart, peer.emoteType, now);
-        if (!active) {
-          peer.waveStart = null;
-          peer.emoteType = null;
-        }
-      }
+      updateEmoteState(peer.emote, peer.rightArm, peer.baseArmRotationZ, now);
     }
   }
 

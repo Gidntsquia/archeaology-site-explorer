@@ -119,27 +119,43 @@ net.on('peer-leave', (msg) => {
   ui.setPeerCount(knownPeers.size);
 });
 net.on('emote', (msg) => {
-  if (avatars) avatars.triggerEmote(msg.id, msg.emoteType);
+  if (avatars) avatars.triggerEmote(msg.id, msg.emoteType, msg.phase);
 });
 
-function sendWave() {
+function startWave() {
   if (!activeSiteId) return;
-  ui.flashWaveBtn();
+  ui.flashWaveBtn(true);
   if (selfArm) selfArm.trigger('wave');
-  net.sendEmote('wave');
+  net.sendEmote('wave', 'start');
 }
-function sendRaise() {
+function stopWave() {
+  ui.flashWaveBtn(false);
+  if (selfArm) selfArm.release('wave');
+  net.sendEmote('wave', 'stop');
+}
+function startRaise() {
   if (!activeSiteId) return;
-  ui.flashRaiseBtn();
+  ui.flashRaiseBtn(true);
   if (selfArm) selfArm.trigger('raise');
-  net.sendEmote('raise');
+  net.sendEmote('raise', 'start');
+}
+function stopRaise() {
+  ui.flashRaiseBtn(false);
+  if (selfArm) selfArm.release('raise');
+  net.sendEmote('raise', 'stop');
 }
 document.addEventListener('keydown', (e) => {
-  if (e.code === 'KeyF' && !e.repeat) sendWave();
-  if (e.code === 'KeyR' && !e.repeat) sendRaise();
+  if (e.code === 'KeyF' && !e.repeat) startWave();
+  if (e.code === 'KeyR' && !e.repeat) startRaise();
 });
-ui.onWaveClick(sendWave);
-ui.onRaiseClick(sendRaise);
+document.addEventListener('keyup', (e) => {
+  if (e.code === 'KeyF') stopWave();
+  if (e.code === 'KeyR') stopRaise();
+});
+ui.onWaveDown(startWave);
+ui.onWaveUp(stopWave);
+ui.onRaiseDown(startRaise);
+ui.onRaiseUp(stopRaise);
 
 async function loadSite(siteId) {
   const site = SITES[siteId];
