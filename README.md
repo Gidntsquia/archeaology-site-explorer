@@ -10,8 +10,7 @@ built from 3D Gaussian splats or photogrammetry meshes, rendered with Three.js a
 desktop and touch/gyro controls on mobile. Other visitors to the same site show up as
 avatars, with names and emotes.
 
-Only one site is live so far, Skara Brae. The app doesn't reconstruct sites from your
-own photos or video — splats are trained offline and added as a site config.
+Only one site is live so far, Skara Brae.
 
 ## Try it 🚀
 
