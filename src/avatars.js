@@ -1,7 +1,23 @@
 import * as THREE from 'three';
 
 const INTERP_DELAY = 100; // ms, render this far behind the newest sample
-const WAVE_DURATION = 1400; // ms
+
+// Keyframes: [timeMs, rotationZ, rotationX]. z = arm swing out from body, x = forward/back swing.
+const EMOTE_KEYFRAMES = {
+  wave: [
+    [0, 0, 0],
+    [120, Math.PI * 0.6, -1.0], // big sweep up
+    [280, Math.PI * 0.6, -0.35], // wave down
+    [440, Math.PI * 0.6, -1.0], // wave back up
+    [600, 0, 0], // return to standard
+  ],
+  raise: [
+    [0, 0, 0],
+    [200, 0.15, -1.5], // sweep straight up
+    [1000, 0.15, -1.5], // hold
+    [1250, 0, 0], // return to standard
+  ],
+};
 
 function makeNameSprite(name) {
   const canvas = document.createElement('canvas');
@@ -85,6 +101,57 @@ function makeAvatarGroup(name, color) {
   return { group, rightArm, baseArmRotationZ: rightArm.rotation.z };
 }
 
+function animateArmFrame(rightArm, baseArmRotationZ, waveStart, emoteType, now) {
+  const keyframes = EMOTE_KEYFRAMES[emoteType];
+  const elapsed = now - waveStart;
+  const duration = keyframes[keyframes.length - 1][0];
+  if (elapsed > duration) {
+    rightArm.rotation.z = baseArmRotationZ;
+    rightArm.rotation.x = 0;
+    return false;
+  }
+  let i = 0;
+  while (i < keyframes.length - 2 && elapsed > keyframes[i + 1][0]) i++;
+  const [t0, z0, x0] = keyframes[i];
+  const [t1, z1, x1] = keyframes[i + 1];
+  const t = t1 > t0 ? (elapsed - t0) / (t1 - t0) : 1;
+  rightArm.rotation.z = lerp(z0, z1, t);
+  rightArm.rotation.x = lerp(x0, x1, t);
+  return true;
+}
+
+export function createSelfArm(camera, color = 0xd9a24a) {
+  const rightArm = makeArm(color, 1);
+  rightArm.position.set(0.28, -0.28, -0.55);
+  rightArm.scale.setScalar(1.3);
+  camera.add(rightArm);
+  const baseArmRotationZ = rightArm.rotation.z;
+  let waveStart = null;
+  let emoteType = null;
+
+  function trigger(type) {
+    if (!EMOTE_KEYFRAMES[type]) return;
+    emoteType = type;
+    waveStart = performance.now();
+  }
+
+  function update() {
+    if (waveStart === null) return;
+    const now = performance.now();
+    const active = animateArmFrame(rightArm, baseArmRotationZ, waveStart, emoteType, now);
+    if (!active) {
+      waveStart = null;
+      emoteType = null;
+    }
+  }
+
+  function dispose() {
+    camera.remove(rightArm);
+  }
+
+  return { trigger, update, dispose };
+}
+
 export function createAvatarManager(scene) {
   const peers = new Map(); // id -> { group, rightArm, baseArmRotationZ, samples, waveStart }
 
@@ -97,7 +164,7 @@ export function createAvatarManager(scene) {
     scene.add(group);
     const now = performance.now();
     const initialSample = { t: now, p: p || [0, 0, 0], q: q || [0, 0, 0, 1] };
-    peers.set(id, { group, rightArm, baseArmRotationZ, samples: [initialSample, initialSample], waveStart: null });
+    peers.set(id, { group, rightArm, baseArmRotationZ, samples: [initialSample, initialSample], waveStart: null, emoteType: null });
   }
 
   function updatePose(id, p, q) {
@@ -108,9 +175,10 @@ export function createAvatarManager(scene) {
   }
 
   function triggerEmote(id, type) {
-    if (type !== 'wave') return;
+    if (!EMOTE_KEYFRAMES[type]) return;
     const peer = peers.get(id);
     if (!peer) return;
+    peer.emoteType = type;
     peer.waveStart = performance.now();
   }
 
@@ -141,15 +209,10 @@ export function createAvatarManager(scene) {
       peer.group.quaternion.slerpQuaternions(qa, qb, t);
 
       if (peer.waveStart !== null) {
-        const elapsed = now - peer.waveStart;
-        if (elapsed > WAVE_DURATION) {
+        const active = animateArmFrame(peer.rightArm, peer.baseArmRotationZ, peer.waveStart, peer.emoteType, now);
+        if (!active) {
           peer.waveStart = null;
-          peer.rightArm.rotation.z = peer.baseArmRotationZ;
-          peer.rightArm.rotation.x = 0;
-        } else {
-          const swing = Math.sin((elapsed / 150) * Math.PI) * 0.9;
-          peer.rightArm.rotation.z = Math.PI * 0.6;
-          peer.rightArm.rotation.x = swing;
+          peer.emoteType = null;
         }
       }
     }

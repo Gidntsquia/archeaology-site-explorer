@@ -17,6 +17,7 @@ const mpRoom = document.getElementById('mp-room');
 const mpPeers = document.getElementById('mp-peers');
 const mpInvite = document.getElementById('mp-invite');
 const waveBtn = document.getElementById('wave-btn');
+const raiseBtn = document.getElementById('raise-btn');
 const namePrompt = document.getElementById('name-prompt');
 const nameInput = document.getElementById('name-input');
 const nameSubmit = document.getElementById('name-submit');
@@ -168,12 +169,24 @@ export function onWaveClick(cb) {
   if (waveBtn) waveBtn.addEventListener('click', cb);
 }
 
+export function onRaiseClick(cb) {
+  if (raiseBtn) raiseBtn.addEventListener('click', cb);
+}
+
 let waveFlashTimer = null;
 export function flashWaveBtn() {
   if (!waveBtn) return;
   waveBtn.classList.add('active');
   clearTimeout(waveFlashTimer);
   waveFlashTimer = setTimeout(() => waveBtn.classList.remove('active'), 300);
+}
+
+let raiseFlashTimer = null;
+export function flashRaiseBtn() {
+  if (!raiseBtn) return;
+  raiseBtn.classList.add('active');
+  clearTimeout(raiseFlashTimer);
+  raiseFlashTimer = setTimeout(() => raiseBtn.classList.remove('active'), 300);
 }
 
 export function showContextLost() {

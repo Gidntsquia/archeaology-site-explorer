@@ -81,6 +81,17 @@ body.is-touch .vert-btn, body.is-touch .gyro-btn { display: block; }
   background: rgba(217,162,74,0.45); border-color: #d9a24a; transform: scale(1.08);
 }
 
+.raise-btn {
+  position: fixed; z-index: 6; left: calc(1rem + env(safe-area-inset-left, 0px));
+  bottom: calc(3.4rem + env(safe-area-inset-bottom, 0px));
+  pointer-events: all; min-height: 44px; padding: 0.4rem 0.9rem; font: inherit; font-size: 0.85rem;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #eee; border-radius: 20px;
+  cursor: pointer; transition: background 0.15s, transform 0.15s, border-color 0.15s;
+}
+.raise-btn.active {
+  background: rgba(217,162,74,0.45); border-color: #d9a24a; transform: scale(1.08);
+}
+
 .context-lost {
   position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 1rem; background: rgba(0,0,0,0.85);

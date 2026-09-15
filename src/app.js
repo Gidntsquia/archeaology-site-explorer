@@ -4,7 +4,7 @@ import { TouchControls } from './touchControls.js';
 import { buildSplatSite } from './splatSite.js';
 import { buildMeshSite } from './meshSite.js';
 import * as net from './net.js';
-import { createAvatarManager } from './avatars.js';
+import { createAvatarManager, createSelfArm } from './avatars.js';
 import testSplatConfig from './sites/test-splat.json' with { type: 'json' };
 import skaraBraeConfig from './sites/skara-brae.json' with { type: 'json' };
 import * as ui from './ui.js';
@@ -33,6 +33,7 @@ let currentSite = null;
 let siteHotspots = [];
 let activeSiteId = null;
 let avatars = null;
+let selfArm = null;
 
 function getOrCreateRoomCode() {
   const params = new URLSearchParams(location.search);
@@ -94,6 +95,8 @@ ui.onBack(() => {
   net.leave();
   if (avatars) avatars.dispose();
   avatars = null;
+  if (selfArm) selfArm.dispose();
+  selfArm = null;
   knownPeers.clear();
   ui.showPicker();
 });
@@ -122,12 +125,21 @@ net.on('emote', (msg) => {
 function sendWave() {
   if (!activeSiteId) return;
   ui.flashWaveBtn();
+  if (selfArm) selfArm.trigger('wave');
   net.sendEmote('wave');
+}
+function sendRaise() {
+  if (!activeSiteId) return;
+  ui.flashRaiseBtn();
+  if (selfArm) selfArm.trigger('raise');
+  net.sendEmote('raise');
 }
 document.addEventListener('keydown', (e) => {
   if (e.code === 'KeyF' && !e.repeat) sendWave();
+  if (e.code === 'KeyR' && !e.repeat) sendRaise();
 });
 ui.onWaveClick(sendWave);
+ui.onRaiseClick(sendRaise);
 
 async function loadSite(siteId) {
   const site = SITES[siteId];
@@ -167,6 +179,7 @@ async function loadSite(siteId) {
   ui.setLoading(1);
 
   avatars = createAvatarManager(scene);
+  selfArm = createSelfArm(camera);
   const room = getOrCreateRoomCode();
   ui.setRoomInfo(room);
   ui.setPeerCount(0);
@@ -199,6 +212,7 @@ function animate() {
     updateHotspotProximity();
     net.sendPose(camera);
     if (avatars) avatars.update();
+    if (selfArm) selfArm.update();
     renderer.render(scene, camera);
   }
 
