@@ -1,0 +1,18 @@
+{
+  "id": "bagan-khayiminga-temple",
+  "name": "Khayiminga Temple (Bagan, Myanmar)",
+  "kind": "mesh",
+  "assetPath": "models/bagan-khayiminga-temple-glb/",
+  "src": "bagan-khayiminga-temple.glb",
+  "spawn": { "position": [0, 1, 12], "lookAt": [0, 1, 0] },
+  "bounds": { "center": [0, 1, 0], "radius": 16 },
+  "speed": 4,
+  "fastMultiplier": 4,
+  "hotspots": [],
+  "credit": {
+    "author": "Miguel Bandera",
+    "license": "CC BY-NC-SA 4.0",
+    "url": "https://sketchfab.com/3d-models/bagan-khayiminga-temple-interior",
+    "note": "Photogrammetry from the CyArk Open Heritage Project dataset. Non-commercial, share-alike. Attribution required."
+  }
+}

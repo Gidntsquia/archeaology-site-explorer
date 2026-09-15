@@ -1,0 +1,18 @@
+{
+  "id": "temple-of-eshmun",
+  "name": "Temple of Eshmun (Sidon, Lebanon)",
+  "kind": "mesh",
+  "assetPath": "models/temple-of-eshmun-glb/",
+  "src": "temple-of-eshmun.glb",
+  "spawn": { "position": [1, 38, 40], "lookAt": [1, 38, 20] },
+  "bounds": { "center": [1, 38, 20], "radius": 60 },
+  "speed": 8,
+  "fastMultiplier": 4,
+  "hotspots": [],
+  "credit": {
+    "author": "Miguel Bandera",
+    "license": "CC BY-NC-SA 4.0",
+    "url": "https://sketchfab.com/3d-models/temple-of-eshmun-detail-area",
+    "note": "Photogrammetry reconstruction using aerial dataset from the CyArk Open Heritage Project. Non-commercial, share-alike. Attribution required."
+  }
+}

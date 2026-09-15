@@ -5,13 +5,15 @@ import { buildSplatSite } from './splatSite.js';
 import { buildMeshSite } from './meshSite.js';
 import * as net from './net.js';
 import { createAvatarManager, createSelfArm } from './avatars.js';
-import testSplatConfig from './sites/test-splat.json' with { type: 'json' };
 import skaraBraeConfig from './sites/skara-brae.json' with { type: 'json' };
+import templeOfEshmunConfig from './sites/temple-of-eshmun.json' with { type: 'json' };
+import baganKhayimingaTempleConfig from './sites/bagan-khayiminga-temple.json' with { type: 'json' };
 import * as ui from './ui.js';
 
 const SITES = {
-  'test-splat': { config: testSplatConfig, kind: 'splat' },
   'skara-brae': { config: skaraBraeConfig, kind: 'mesh' },
+  'temple-of-eshmun': { config: templeOfEshmunConfig, kind: 'mesh' },
+  'bagan-khayiminga-temple': { config: baganKhayimingaTempleConfig, kind: 'mesh' },
 };
 
 const isTouch = matchMedia('(pointer: coarse)').matches;
