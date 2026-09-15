@@ -1,6 +1,8 @@
 # Archaeology Site Explorer 🏛️
 
-<!-- TODO: screenshot or gif of the fly-through view of a loaded site -->
+<p align="center">
+  <img alt="Inside House 2 at Skara Brae, rendered from the fly-through view" src="docs/skara-brae-hero.png">
+</p>
 
 A browser app for flying freely around real archaeological sites in 3D. Sites are built
 from 3D Gaussian splats (reconstructed from photos or video) or photogrammetry meshes,
