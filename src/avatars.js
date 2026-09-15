@@ -57,7 +57,13 @@ function makeGhostBody(color) {
 function makeArm(color, side) {
   const arm = new THREE.Mesh(
     new THREE.CapsuleGeometry(0.035, 0.22, 4, 8),
-    new THREE.MeshStandardMaterial({ color, transparent: true, opacity: 0.8 }),
+    new THREE.MeshStandardMaterial({
+      color,
+      transparent: true,
+      opacity: 0.8,
+      emissive: color,
+      emissiveIntensity: 0.15,
+    }),
   );
   const pivot = new THREE.Group();
   pivot.position.set(side * 0.2, 0.15, 0);

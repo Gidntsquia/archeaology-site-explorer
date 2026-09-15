@@ -102,7 +102,7 @@ const NAME_KEY = 'player-name';
 
 export function getSavedName() {
   try {
-    return localStorage.getItem(NAME_KEY) || '';
+    return sessionStorage.getItem(NAME_KEY) || '';
   } catch {
     return '';
   }
@@ -110,7 +110,7 @@ export function getSavedName() {
 
 function saveName(name) {
   try {
-    localStorage.setItem(NAME_KEY, name);
+    sessionStorage.setItem(NAME_KEY, name);
   } catch {
     // ignore
   }
