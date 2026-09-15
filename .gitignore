@@ -1,3 +1,8 @@
 assets-src/
 node_modules/
 dist/
+.vercel
+.env*
+MOBILE_PLAN.md
+MULTIPLAYER_PLAN.md
+PLAN.md
