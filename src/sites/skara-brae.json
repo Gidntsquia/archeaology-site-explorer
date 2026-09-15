@@ -1,0 +1,18 @@
+{
+  "id": "skara-brae",
+  "name": "Skara Brae, House 2 (Orkney)",
+  "kind": "mesh",
+  "assetPath": "models/skara-brae-glb/",
+  "src": "skara-brae.glb",
+  "spawn": { "position": [0.65, -1, 5], "lookAt": [0.65, -9, -14.4] },
+  "bounds": { "center": [0.65, -9.7, -14.4], "radius": 35 },
+  "speed": 6,
+  "fastMultiplier": 4,
+  "hotspots": [],
+  "credit": {
+    "author": "Dr Hugo Anderson-Whymark",
+    "license": "CC BY-NC 4.0",
+    "url": "https://sketchfab.com/3d-models/skara-brae-orkney-house-2-e12c4389a6154bf5a72b74c34a1823b8",
+    "note": "Non-commercial, educational use only. Attribution required."
+  }
+}

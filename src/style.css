@@ -1,0 +1,118 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #0a0a0a; color: #eee; font-family: system-ui, sans-serif; overflow: hidden; overscroll-behavior: none; }
+
+#scene { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+
+.picker {
+  position: fixed; inset: 0; z-index: 10;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2rem;
+  background: radial-gradient(circle at 50% 30%, #1a1410 0%, #050505 70%);
+}
+.picker h1 { font-size: 1.8rem; letter-spacing: 0.05em; }
+.cards { display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; }
+.card {
+  width: 220px; padding: 1.2rem; text-align: left; cursor: pointer;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+  color: inherit; font: inherit; transition: background 0.15s, transform 0.15s;
+}
+.card:hover { background: rgba(255,255,255,0.12); transform: translateY(-2px); }
+.card h2 { margin: 0 0 0.4rem; }
+.card p { margin: 0; font-size: 0.85rem; opacity: 0.75; }
+
+.hud { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
+.loading-bar {
+  position: fixed; top: 0; left: 0; height: 3px; width: 100%;
+  background: rgba(255,255,255,0.1);
+}
+.loading-fill { height: 100%; width: 0%; background: #d9a24a; transition: width 0.2s; }
+.location-name {
+  position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
+  font-size: 0.95rem; letter-spacing: 0.04em; text-shadow: 0 1px 3px #000;
+}
+.fps { position: fixed; top: 0.5rem; right: 0.6rem; font-size: 0.7rem; opacity: 0.5; }
+.back-btn {
+  position: fixed; top: calc(0.6rem + env(safe-area-inset-top, 0px)); left: calc(0.6rem + env(safe-area-inset-left, 0px));
+  pointer-events: all; cursor: pointer; min-height: 44px;
+  background: rgba(0,0,0,0.5); color: #eee; border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px; padding: 0.4rem 0.7rem; font: inherit;
+}
+.fullscreen-btn {
+  position: fixed; top: calc(0.6rem + env(safe-area-inset-top, 0px)); right: calc(0.6rem + env(safe-area-inset-right, 0px));
+  pointer-events: all; cursor: pointer; width: 44px; height: 44px;
+  background: rgba(0,0,0,0.5); color: #eee; border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px; font-size: 1.1rem;
+}
+.joystick-base, .joystick-knob {
+  position: fixed; z-index: 6; border-radius: 50%; pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.joystick-base { width: 100px; height: 100px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); }
+.joystick-knob { width: 44px; height: 44px; background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.35); }
+
+.vert-btn, .gyro-btn { display: none; }
+body.is-touch .vert-btn, body.is-touch .gyro-btn { display: block; }
+
+.vert-btn {
+  position: fixed; z-index: 6; right: calc(1rem + env(safe-area-inset-right, 0px));
+  width: 52px; height: 52px; border-radius: 50%; pointer-events: all;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #eee;
+  font-size: 1.1rem; touch-action: none;
+}
+.vert-btn-up { bottom: calc(6.2rem + env(safe-area-inset-bottom, 0px)); }
+.vert-btn-down { bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px)); }
+
+.gyro-btn {
+  position: fixed; z-index: 6; left: 50%; transform: translateX(-50%);
+  bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px));
+  pointer-events: all; min-height: 40px; padding: 0.3rem 0.8rem; font: inherit; font-size: 0.75rem;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: #eee; border-radius: 20px;
+}
+.gyro-btn.active { background: rgba(217,162,74,0.35); border-color: #d9a24a; }
+
+.context-lost {
+  position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1rem; background: rgba(0,0,0,0.85);
+}
+.context-lost button { min-height: 44px; padding: 0.5rem 1.2rem; font: inherit; }
+
+.gesture-overlay {
+  position: fixed; inset: 0; z-index: 15; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.75); padding: 1rem;
+}
+.gesture-card {
+  background: rgba(20,18,16,0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px;
+  padding: 1.2rem 1.4rem; max-width: 320px;
+}
+.gesture-card h3 { margin: 0 0 0.6rem; }
+.gesture-card p { margin: 0.3rem 0; font-size: 0.85rem; line-height: 1.4; opacity: 0.9; }
+.gesture-card button { margin-top: 0.8rem; width: 100%; min-height: 44px; font: inherit; }
+
+.hotspot-panel {
+  position: fixed; right: 1rem; top: 1rem; z-index: 8; width: 280px;
+  background: rgba(10,10,10,0.9); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px;
+  padding: 1rem;
+}
+.hotspot-panel h3 { margin: 0 0 0.5rem; }
+.hotspot-panel p { margin: 0; font-size: 0.85rem; line-height: 1.4; opacity: 0.9; }
+#hotspot-close {
+  position: absolute; top: 0.4rem; right: 0.5rem; cursor: pointer; background: none;
+  border: none; color: #eee; font-size: 1.1rem;
+}
+
+.is-touch .fps { display: none; }
+body.is-touch.debug .fps { display: block; }
+
+@media (max-width: 600px) {
+  .picker h1 { font-size: 1.4rem; text-align: center; padding: 0 1rem; }
+  .cards { flex-direction: column; width: 100%; padding: 0 1rem; }
+  .card { width: 100%; min-height: 44px; }
+
+  .hotspot-panel {
+    left: 0; right: 0; top: auto; bottom: 0; width: 100%; max-height: 40vh;
+    overflow-y: auto; border-radius: 12px 12px 0 0;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+[hidden] { display: none !important; }

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <title>Archaeology Site Explorer</title>
+  <link rel="stylesheet" href="src/style.css" />
+</head>
+<body>
+  <div id="picker" class="picker">
+    <h1>Archaeology Site Explorer</h1>
+    <div class="cards">
+      <button class="card" data-site="test-splat">
+        <h2>Splat Viewer Test</h2>
+        <p>Gaussian splat renderer milestone — public test splat, fly controls, bounds spring</p>
+      </button>
+      <button class="card" data-site="skara-brae">
+        <h2>Skara Brae, House 2</h2>
+        <p>Neolithic settlement on Orkney — photogrammetry mesh, CC BY-NC (educational use)</p>
+      </button>
+    </div>
+  </div>
+
+  <div id="hud" class="hud" hidden>
+    <div id="loading-bar" class="loading-bar"><div id="loading-fill"></div></div>
+    <div id="location-name" class="location-name"></div>
+    <div id="fps" class="fps"></div>
+    <button id="back-btn" class="back-btn">← Sites</button>
+    <button id="fullscreen-btn" class="fullscreen-btn">⛶</button>
+    <div id="joystick-base" class="joystick-base" hidden></div>
+    <div id="joystick-knob" class="joystick-knob" hidden></div>
+    <button id="btn-down" class="vert-btn vert-btn-down">▼</button>
+    <button id="btn-up" class="vert-btn vert-btn-up">▲</button>
+    <button id="gyro-btn" class="gyro-btn">Gyro: off</button>
+  </div>
+
+  <div id="hotspot-panel" class="hotspot-panel" hidden>
+    <button id="hotspot-close">×</button>
+    <h3 id="hotspot-title"></h3>
+    <p id="hotspot-text"></p>
+  </div>
+
+  <div id="context-lost" class="context-lost" hidden>
+    <p>Display lost the WebGL context.</p>
+    <button onclick="location.reload()">Reload</button>
+  </div>
+
+  <div id="gesture-overlay" class="gesture-overlay" hidden>
+    <div class="gesture-card">
+      <h3>Controls</h3>
+      <p><strong>Left side:</strong> drag to move</p>
+      <p><strong>Right side:</strong> drag to look</p>
+      <p><strong>▲ / ▼ buttons:</strong> fly up/down</p>
+      <p><strong>Pinch (right side):</strong> adjust speed</p>
+      <p><strong>Double-tap (right side):</strong> reset view</p>
+      <p><strong>Gyro button:</strong> look by tilting, walk in place to move where you're looking</p>
+      <button id="gesture-dismiss">Got it</button>
+    </div>
+  </div>
+
+  <canvas id="scene"></canvas>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
