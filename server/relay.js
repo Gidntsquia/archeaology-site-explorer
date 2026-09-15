@@ -1,3 +1,4 @@
+import { createServer } from 'node:http';
 import { WebSocketServer } from 'ws';
 
 const PORT = process.env.PORT || 8787;
@@ -8,7 +9,14 @@ const rooms = new Map();
 
 let nextId = 1;
 
-const wss = new WebSocketServer({ port: PORT });
+const httpServer = createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('ok');
+});
+
+const wss = new WebSocketServer({ server: httpServer });
+
+httpServer.listen(PORT);
 
 function send(ws, msg) {
   if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(msg));
