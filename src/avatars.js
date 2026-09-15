@@ -4,21 +4,18 @@ const INTERP_DELAY = 100; // ms, render this far behind the newest sample
 
 // z = arm swing out from body, x = forward/up swing (positive = up and forward, since
 // rotating +x moves the hanging arm toward -z/+y, i.e. up in front of the avatar).
+const WAVE_UP_TO = [0.9, 2.6];
 const EMOTE_CONFIG = {
   wave: {
-    upDuration: 120,
-    upTo: [0.9, 2.6],
-    loopPeriod: 160, // ms per half-cycle while held
-    loopFrom: [0.9, 2.6],
-    loopTo: [0.9, 2.25],
+    upDuration: 150,
+    upTo: WAVE_UP_TO,
+    cyclePeriod: 450, // ms for one full up -> dip -> up wave cycle
+    dipDelta: 0.35, // ~20deg dip on the x (forward/up) rotation
     downDuration: 220,
   },
   raise: {
-    upDuration: 200,
-    upTo: [0.15, 2.75],
-    loopPeriod: 0, // static hold while held
-    loopFrom: [0.15, 2.75],
-    loopTo: [0.15, 2.75],
+    upDuration: 150,
+    upTo: WAVE_UP_TO,
     downDuration: 250,
   },
 };
@@ -106,7 +103,14 @@ function makeAvatarGroup(name, color) {
 }
 
 function newEmoteState() {
-  return { emoteType: null, phase: null, phaseStart: 0, downFromZ: 0, downFromX: 0 };
+  return {
+    emoteType: null,
+    phase: null,
+    phaseStart: 0,
+    downFromZ: 0,
+    downFromX: 0,
+    pendingRelease: false,
+  };
 }
 
 function startEmote(state, type) {
@@ -114,14 +118,25 @@ function startEmote(state, type) {
   state.emoteType = type;
   state.phase = 'up';
   state.phaseStart = performance.now();
+  state.pendingRelease = false;
+}
+
+function beginDown(state, now) {
+  state.phase = 'down';
+  state.phaseStart = now;
+  state.downFromZ = state.currentZ ?? 0;
+  state.downFromX = state.currentX ?? 0;
 }
 
 function releaseEmote(state) {
   if (!state.emoteType || state.phase === 'down') return;
-  state.phase = 'down';
-  state.phaseStart = performance.now();
-  state.downFromZ = state.currentZ ?? 0;
-  state.downFromX = state.currentX ?? 0;
+  const cfg = EMOTE_CONFIG[state.emoteType];
+  // Waves must finish the cycle in progress; other emotes lower immediately.
+  if (cfg.cyclePeriod) {
+    state.pendingRelease = true;
+  } else {
+    beginDown(state, performance.now());
+  }
 }
 
 function updateEmoteState(state, rightArm, baseArmRotationZ, now) {
@@ -134,18 +149,31 @@ function updateEmoteState(state, rightArm, baseArmRotationZ, now) {
     rightArm.rotation.z = lerp(0, cfg.upTo[0], t);
     rightArm.rotation.x = lerp(0, cfg.upTo[1], t);
     if (t >= 1) {
-      state.phase = 'loop';
-      state.phaseStart = now;
+      if (cfg.cyclePeriod) {
+        state.phase = 'loop';
+        state.phaseStart = now;
+      } else if (state.pendingRelease) {
+        beginDown(state, now);
+      } else {
+        state.phase = 'loop';
+        state.phaseStart = now;
+      }
     }
   } else if (state.phase === 'loop') {
-    if (cfg.loopPeriod > 0) {
-      const cycle = (elapsed % (cfg.loopPeriod * 2)) / cfg.loopPeriod;
-      const t = cycle <= 1 ? cycle : 2 - cycle;
-      rightArm.rotation.z = lerp(cfg.loopFrom[0], cfg.loopTo[0], t);
-      rightArm.rotation.x = lerp(cfg.loopFrom[1], cfg.loopTo[1], t);
+    if (cfg.cyclePeriod) {
+      // Triangle wave: max -> dip -> max over one cyclePeriod.
+      const local = (elapsed % cfg.cyclePeriod) / cfg.cyclePeriod;
+      const t = local <= 0.5 ? local * 2 : (1 - local) * 2;
+      rightArm.rotation.z = cfg.upTo[0];
+      rightArm.rotation.x = cfg.upTo[1] - cfg.dipDelta * t;
+      if (elapsed >= cfg.cyclePeriod) {
+        state.phaseStart = now;
+        if (state.pendingRelease) beginDown(state, now);
+      }
     } else {
       rightArm.rotation.z = cfg.upTo[0];
       rightArm.rotation.x = cfg.upTo[1];
+      if (state.pendingRelease) beginDown(state, now);
     }
   } else if (state.phase === 'down') {
     const t = Math.min(1, elapsed / cfg.downDuration);
@@ -156,6 +184,7 @@ function updateEmoteState(state, rightArm, baseArmRotationZ, now) {
       state.phase = null;
       state.currentZ = null;
       state.currentX = null;
+      state.pendingRelease = false;
       return false;
     }
   }
